@@ -215,7 +215,8 @@ const authPronto = new Promise((res, rej) => {
 });
 
 async function hashChave(k) {
-  const norm = k.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+  // ignora maiúsculas, acentos e espaços extras (o corretor do iPhone não atrapalha)
+  const norm = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("financas-casal|" + norm));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -241,7 +242,7 @@ function telaChave() {
     <p>Digite a chave da casa para entrar.<br>Você só faz isso uma vez neste aparelho.</p>
     <form id="fChave">
       <div class="group">
-        <label class="f full"><input id="chave" type="password" placeholder="Chave da casa" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+        <label class="f full"><input id="chave" type="text" placeholder="Chave da casa" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true"></label>
       </div>
       <button class="btn" id="bEntrar">Entrar</button>
       <div class="erro hidden" id="erro"></div>
@@ -271,10 +272,10 @@ function telaChave() {
 function telaCriar(id, chave) {
   root.innerHTML = gateHTML(`
     <h1>Criar a casa</h1>
-    <div class="aviso">Nenhuma casa usa essa chave ainda. Se é a primeira vez, crie agora. Se vocês já criaram, volte e confira se a chave foi digitada certinho.</div>
+    <div class="aviso">Nenhuma casa usa essa chave ainda. Se é a primeira vez, confira a chave abaixo e crie a casa. Se vocês já criaram, volte e confira se ela foi digitada certinho.</div>
     <form id="fCriar">
       <div class="group">
-        <label class="f"><span>Confirme a chave</span><input id="chave2" type="password" autocomplete="off" autocapitalize="none" autocorrect="off"></label>
+        <label class="f"><span>Chave da casa</span><input id="chave2" type="text" value="${esc(chave)}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
         <label class="f"><span>Nome 1</span><input id="n1" value="Vanessa"></label>
         <label class="f"><span>Nome 2</span><input id="n2" value="Ana"></label>
       </div>
@@ -286,7 +287,9 @@ function telaCriar(id, chave) {
   $("#fCriar").onsubmit = async (e) => {
     e.preventDefault();
     const erro = $("#erro");
-    if ((await hashChave($("#chave2").value)) !== id) { erro.textContent = "As chaves não são iguais."; erro.classList.remove("hidden"); return; }
+    const k2 = $("#chave2").value;
+    if (k2.trim().length < 8) { erro.textContent = "A chave precisa ter pelo menos 8 caracteres."; erro.classList.remove("hidden"); return; }
+    id = await hashChave(k2); // vale a chave como está escrita aqui
     $("#bCriar").disabled = true; $("#bCriar").textContent = "Criando…";
     try {
       const b = writeBatch(db);
@@ -630,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.1 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
