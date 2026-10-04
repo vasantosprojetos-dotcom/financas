@@ -633,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.2 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.3 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -707,9 +707,11 @@ function ajustarSheet() {
   const sh = $(".sheet", sheetRoot);
   const vv = window.visualViewport;
   if (!sh || !vv) return;
+  if (window.innerWidth >= 700) { sh.style.top = sh.style.bottom = sh.style.height = ""; return; }
+  // A folha fica presa no TOPO: abrir/fechar o teclado só muda a altura,
+  // nada se mexe debaixo do dedo (evita tocar numa linha e abrir a de baixo).
   const teclado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
   sh.style.bottom = `${teclado}px`;
-  sh.style.maxHeight = `${vv.height - (teclado ? 8 : 24)}px`;
   if (window.scrollY) window.scrollTo(0, 0);
 }
 if (window.visualViewport) {
