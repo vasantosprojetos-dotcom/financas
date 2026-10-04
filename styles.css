@@ -280,7 +280,7 @@ button.row:active, .row.tap:active { opacity: 0.6; }
   max-width: 560px; margin: 0 auto; max-height: calc(100vh - var(--safe-top) - 24px);
   background: var(--bg); border-radius: 24px 24px 0 0;
   display: flex; flex-direction: column;
-  transform: translateY(100%); transition: transform 0.42s var(--ease);
+  transform: translateY(100%); transition: transform 0.42s var(--ease), bottom 0.2s;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.12);
 }
 .sheet.in { transform: none; }
@@ -298,7 +298,9 @@ button.row:active, .row.tap:active { opacity: 0.6; }
 .sheet-h .l { justify-self: start; color: var(--accent); font-size: 16px; }
 .sheet-h .r { justify-self: end; color: var(--accent); font-size: 16px; font-weight: 650; }
 .sheet-h .r:disabled { color: var(--faint); }
-.sheet-b { overflow-y: auto; padding: 4px 16px calc(var(--safe-bottom) + 24px); -webkit-overflow-scrolling: touch; }
+.sheet-b { overflow-y: auto; padding: 4px 16px 16px; -webkit-overflow-scrolling: touch; flex: 1 1 auto; min-height: 0; }
+.sheet-f { flex: 0 0 auto; padding: 10px 16px calc(var(--safe-bottom) + 12px); background: var(--bg); border-top: 0.5px solid var(--line); }
+.sheet:not(:has(.sheet-f)) .sheet-b { padding-bottom: calc(var(--safe-bottom) + 24px); }
 
 /* Grupos de formulário estilo iOS */
 .group { background: var(--card); border-radius: var(--radius-sm); margin-bottom: 14px; overflow: hidden; }
@@ -406,3 +408,8 @@ button.row:active, .row.tap:active { opacity: 0.6; }
 .toast button { color: #A5A4FF; font-weight: 600; font-size: 15px; }
 .toast.out { opacity: 0; transform: translateY(10px); transition: all 0.25s; }
 @keyframes toast { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* Campos de data/mês alinhados à direita no iPhone */
+.f input[type="date"], .f input[type="month"] { text-align: right; min-height: 46px; display: block; }
+.f input::-webkit-date-and-time-value { text-align: right; }
+body:has(.sheet) #toast-root { bottom: calc(var(--safe-bottom) + 96px); }

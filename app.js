@@ -633,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.1 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.2 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -690,16 +690,34 @@ function abrirSheet({ titulo, corpo, esquerda = "Cancelar", direita = null, onDi
   fecharSheet(true);
   sheetRoot.innerHTML = `<div class="overlay"></div><div class="sheet" role="dialog" aria-label="${esc(titulo)}">
     <div class="sheet-h"><button class="l" data-s="fechar">${esquerda}</button><h2>${esc(titulo)}</h2>${direita ? `<button class="r" data-s="ok">${direita}</button>` : "<span></span>"}</div>
-    <div class="sheet-b">${corpo}</div></div>`;
+    <div class="sheet-b">${corpo}</div>
+    ${direita ? `<div class="sheet-f"><button class="btn" data-s="ok2">${direita}</button></div>` : ""}</div>`;
   const ov = $(".overlay", sheetRoot), sh = $(".sheet", sheetRoot);
   requestAnimationFrame(() => { ov.classList.add("in"); sh.classList.add("in"); });
   ov.onclick = () => fecharSheet();
   $('[data-s="fechar"]', sh).onclick = () => fecharSheet();
-  if (direita) $('[data-s="ok"]', sh).onclick = () => onDireita?.();
+  if (direita) { $('[data-s="ok"]', sh).onclick = () => onDireita?.(); $('[data-s="ok2"]', sh).onclick = () => onDireita?.(); }
+  ajustarSheet();
   document.body.style.overflow = "hidden";
   onMontar?.(sh);
   return sh;
 }
+/* iPhone: mantém a folha inteira visível acima do teclado (o topo nunca some) */
+function ajustarSheet() {
+  const sh = $(".sheet", sheetRoot);
+  const vv = window.visualViewport;
+  if (!sh || !vv) return;
+  const teclado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  sh.style.bottom = `${teclado}px`;
+  sh.style.maxHeight = `${vv.height - (teclado ? 8 : 24)}px`;
+  if (window.scrollY) window.scrollTo(0, 0);
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", ajustarSheet);
+  window.visualViewport.addEventListener("scroll", ajustarSheet);
+}
+document.addEventListener("focusout", () => setTimeout(() => { ajustarSheet(); if (window.scrollY) window.scrollTo(0, 0); }, 60));
+
 function fecharSheet(imediato = false) {
   const ov = $(".overlay", sheetRoot), sh = $(".sheet", sheetRoot);
   document.body.style.overflow = "";
