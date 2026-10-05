@@ -366,7 +366,7 @@ function render() {
     } else meses.scrollLeft = scrollMeses;
   }
   ultimoMesRender = S.mes;
-  if (focoId) { const el = document.getElementById(focoId); if (el) { el.focus(); if (sel) try { el.setSelectionRange(...sel); } catch (_) {} } }
+  if (focoId) { const el = document.getElementById(focoId); if (el) { el.focus({ preventScroll: true }); if (sel) try { el.setSelectionRange(...sel); } catch (_) {} } }
 }
 
 function saudacao() {
@@ -633,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.5 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.6 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -702,6 +702,13 @@ function abrirSheet({ titulo, corpo, esquerda = "Cancelar", direita = null, onDi
   onMontar?.(sh);
   return sh;
 }
+/* Coloca o cursor no campo só depois que a janela terminou de subir
+   (se o campo estiver fora da tela, o iPhone rola tudo para mostrá-lo) */
+function focarDepois(el, ms = 460) {
+  if (!el) return;
+  setTimeout(() => { if (document.contains(el)) { el.focus({ preventScroll: true }); ajustarSheet(); } }, ms);
+}
+
 /* Trava a página de fundo (no iPhone, rolar o fundo desalinha os toques) */
 let travadaEm = null;
 function travarPagina(on) {
@@ -726,6 +733,7 @@ function ajustarSheet() {
   // nada se mexe debaixo do dedo (evita tocar numa linha e abrir a de baixo).
   const teclado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
   sh.style.bottom = `${teclado}px`;
+  sh.style.top = vv.offsetTop > 0 ? `${vv.offsetTop + 12}px` : "";
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", ajustarSheet);
@@ -879,7 +887,7 @@ function formLanc({ modo = "novo", orig = null, preset = {} } = {}) {
     toast(modo === "novo" || modo === "rec" ? "Lançado ✓" : "Alterações salvas ✓");
   };
 
-  abrirSheet({ titulo, corpo: "", direita: "Salvar", onDireita: () => salvar($(".sheet", sheetRoot)), onMontar: (sh) => { montar(sh); if (modo === "novo") $("#fl-valor", sh)?.focus(); } });
+  abrirSheet({ titulo, corpo: "", direita: "Salvar", onDireita: () => salvar($(".sheet", sheetRoot)), onMontar: (sh) => { montar(sh); if (modo === "novo") focarDepois($("#fl-valor", sh)); } });
 }
 
 function salvarLanc(f, modo, orig) {
@@ -997,7 +1005,7 @@ function formRapido() {
     titulo: "Lançamento rápido", corpo, esquerda: "Fechar",
     onMontar: (sh) => {
       const inp = $("#q-valor", sh);
-      inp.focus();
+      focarDepois(inp);
       $$("[data-p]", sh).forEach((b) => (b.onclick = () => {
         pay = b.dataset.p; localStorage.setItem(LS.pay, pay);
         $$("[data-p]", sh).forEach((x) => x.classList.toggle("on", x === b));
