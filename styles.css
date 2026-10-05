@@ -438,3 +438,18 @@ body:has(.sheet) #toast-root { bottom: calc(var(--safe-bottom) + 96px); }
 /* Toque firme: sem seleção de texto nem menu "Copiar" ao segurar */
 button, .f.sel, .pk, .pk *, .tab, .month, .quick button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .pk-l { overscroll-behavior: contain; }
+
+/* Lançamentos agrupados por categoria */
+.agrupar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 4px 0; font-size: 14px; color: var(--muted); }
+.seg.mini { width: 200px; }
+.seg.mini button { height: 28px; font-size: 13px; }
+.cat-g { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 10px; overflow: hidden; }
+.cat-h { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 14px 16px; }
+.cat-h .row-t { font-weight: 650; }
+.cat-bar { height: 4px; background: var(--fill-2); border-radius: 2px; margin-top: 7px; overflow: hidden; max-width: 220px; }
+.cat-bar i { display: block; height: 100%; background: var(--c); border-radius: 2px; }
+.cat-chev { transform: rotate(90deg); transition: transform .25s var(--ease); margin-left: 2px; }
+.cat-g.fechado .cat-chev { transform: rotate(0deg); }
+.cat-b { padding: 0 16px 2px; border-top: 0.5px solid var(--line); }
+.cat-g.fechado .cat-b { display: none; }
+.cat-b .ico { width: 32px; height: 32px; font-size: 16px; border-radius: 10px; }

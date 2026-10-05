@@ -85,6 +85,7 @@ const S = {
   lanc: new Map(), rec: new Map(), cartoes: new Map(), contas: new Map(),
   mes: ymOf(todayStr()), view: "inicio", sub: null,
   filtro: "todos", busca: "", catTipo: "despesa",
+  agrupar: (() => { try { return localStorage.getItem("fc_agrupar") || "cat"; } catch { return "cat"; } })(), fechadas: new Set(),
   pending: false, online: navigator.onLine, unsubs: []
 };
 
@@ -566,13 +567,45 @@ function viewLanc() {
   });
   lista.sort(ordemLanc);
 
-  const grupos = new Map();
-  lista.forEach((l) => { const k = l.data || ""; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(l); });
-  const corpo = lista.length ? [...grupos.entries()].map(([d, ls]) => {
-    const soma = ls.reduce((s, l) => s + (l.tipo === "receita" ? l.valor : l.tipo === "despesa" ? -l.valor : 0), 0);
-    return `<div class="day-h"><span>${esc(dataBonita(d))}</span>${soma ? `<span class="num">${soma > 0 ? "+" : "−"} ${brl(Math.abs(soma))}</span>` : ""}</div>
-      <div class="day-card list">${ls.map(linhaLanc).join("")}</div>`;
-  }).join("") : `<div class="card empty"><div class="e-ico">🗂️</div><b>${q ? "Nada encontrado" : "Nenhum lançamento"}</b>${q ? "Tente outra palavra." : `Ainda não há lançamentos em ${mesNome(S.mes).toLowerCase()}.`}</div>`;
+  const vazio = `<div class="card empty"><div class="e-ico">🗂️</div><b>${q ? "Nada encontrado" : "Nenhum lançamento"}</b>${q ? "Tente outra palavra." : `Ainda não há lançamentos em ${mesNome(S.mes).toLowerCase()}.`}</div>`;
+  let corpo;
+  if (!lista.length) corpo = vazio;
+  else if (S.agrupar === "data") {
+    const grupos = new Map();
+    lista.forEach((l) => { const k = l.data || ""; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(l); });
+    corpo = [...grupos.entries()].map(([d, ls]) => {
+      const soma = ls.reduce((s, l) => s + (l.tipo === "receita" ? l.valor : l.tipo === "despesa" ? -l.valor : 0), 0);
+      return `<div class="day-h"><span>${esc(dataBonita(d))}</span>${soma ? `<span class="num">${soma > 0 ? "+" : "−"} ${brl(Math.abs(soma))}</span>` : ""}</div>
+        <div class="day-card list">${ls.map(linhaLanc).join("")}</div>`;
+    }).join("");
+  } else {
+    // Por categoria: despesas primeiro (maior gasto no topo), depois receitas e investimentos
+    const ordemTipo = { despesa: 0, receita: 1, investimento: 2 };
+    const grupos = new Map();
+    lista.forEach((l) => { const k = `${l.tipo}|${l.catId}`; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(l); });
+    const totTipo = { despesa: t.despesas, receita: t.receitas, investimento: t.investido };
+    const titulos = { despesa: "Despesas", receita: "Receitas", investimento: "Investimentos" };
+    const ordenados = [...grupos.entries()].map(([k, ls]) => ({ k, tipo: ls[0].tipo, cat: catInfo(ls[0].tipo, ls[0].catId), ls, total: ls.reduce((s, l) => s + l.valor, 0) }))
+      .sort((a, b) => ordemTipo[a.tipo] - ordemTipo[b.tipo] || b.total - a.total);
+    let tipoAtual = null;
+    corpo = ordenados.map((g) => {
+      const cab = S.filtro === "todos" && g.tipo !== tipoAtual ? `<div class="section-label">${titulos[g.tipo]}</div>` : "";
+      tipoAtual = g.tipo;
+      const pct = totTipo[g.tipo] ? Math.round((g.total / totTipo[g.tipo]) * 100) : 0;
+      const fechado = S.fechadas.has(g.k);
+      const cls = g.tipo === "receita" ? " rec" : g.tipo === "investimento" ? " inv" : "";
+      return `${cab}<section class="cat-g${fechado ? " fechado" : ""}" style="--c:${g.cat.cor}">
+        <button class="cat-h" data-a="toggle-cat" data-v="${esc(g.k)}">
+          <div class="ico" style="--tint:${tint(g.cat.cor)}">${g.cat.emoji}</div>
+          <div class="row-main"><div class="row-t">${esc(g.cat.nome)}</div>
+            <div class="row-s">${g.ls.length} ${g.ls.length === 1 ? "lançamento" : "lançamentos"} · ${pct}%</div>
+            <div class="cat-bar"><i style="width:${pct}%"></i></div></div>
+          <div class="row-v num${cls}">${brl(g.total)}</div><span class="chev cat-chev">›</span>
+        </button>
+        <div class="cat-b list">${g.ls.map(linhaLanc).join("")}</div>
+      </section>`;
+    }).join("");
+  }
 
   const f = (v, n) => `<button class="${S.filtro === v ? "on" : ""}" data-a="filtro" data-v="${v}">${n}</button>`;
   return `
@@ -582,6 +615,7 @@ function viewLanc() {
       <div><small>Investido</small><b class="num" style="color:var(--teal)">${brl(t.investido)}</b></div>
     </div>
     <div class="seg">${f("todos", "Todos")}${f("despesa", "Despesas")}${f("receita", "Receitas")}${f("investimento", "Invest.")}</div>
+    <div class="agrupar"><span>Agrupar por</span><div class="seg mini"><button class="${S.agrupar !== "data" ? "on" : ""}" data-a="agrupar" data-v="cat">Categoria</button><button class="${S.agrupar === "data" ? "on" : ""}" data-a="agrupar" data-v="data">Data</button></div></div>
     <label class="search">${IC.search}<input id="busca" type="search" placeholder="Buscar" value="${esc(S.busca)}" autocomplete="off"></label>
     ${corpo}`;
 }
@@ -633,7 +667,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.6 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.7 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -1348,6 +1382,8 @@ document.addEventListener("click", (e) => {
     case "view": S.view = v; S.sub = null; window.scrollTo({ top: 0 }); agendar(); break;
     case "sub": S.sub = v || null; window.scrollTo({ top: 0 }); agendar(); break;
     case "filtro": S.filtro = v; agendar(); break;
+    case "agrupar": S.agrupar = v; try { localStorage.setItem("fc_agrupar", v); } catch {} agendar(); break;
+    case "toggle-cat": S.fechadas.has(v) ? S.fechadas.delete(v) : S.fechadas.add(v); agendar(); break;
     case "cat-tipo": S.catTipo = v; agendar(); break;
     case "rapido": formRapido(); break;
     case "novo": formLanc({ preset: { data: S.mes === ymOf(todayStr()) ? todayStr() : `${S.mes}-01` } }); break;
