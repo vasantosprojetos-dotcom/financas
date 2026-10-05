@@ -633,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.3 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.4 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -1371,6 +1371,52 @@ function ajustarValores() {
 }
 document.addEventListener("input", (e) => { if (e.target.closest(".amount")) ajustarValores(); });
 new MutationObserver(ajustarValores).observe(sheetRoot, { childList: true, subtree: true });
+
+/* ---------------- Seletor próprio (substitui o menu nativo do iPhone) ----------------
+   Guarda a linha exata em que o dedo encostou; mesmo que a tela se mexa
+   entre o toque e o clique, abre a escolha certa. */
+let linhaTocada = null;
+document.addEventListener("pointerdown", (e) => {
+  const row = e.target.closest(".f.sel");
+  linhaTocada = row ? { row, t: Date.now() } : null;
+  if (row && document.activeElement && document.activeElement.matches("input, textarea")) document.activeElement.blur();
+}, true);
+document.addEventListener("click", (e) => {
+  const alvo = e.target.closest(".f.sel");
+  if (!alvo) return;
+  e.preventDefault(); e.stopPropagation();
+  const row = linhaTocada && Date.now() - linhaTocada.t < 1500 && document.contains(linhaTocada.row) ? linhaTocada.row : alvo;
+  linhaTocada = null;
+  const sel = $("select", row);
+  if (sel && !sel.disabled) abrirSeletor(sel, $("span", row)?.textContent || "");
+}, true);
+
+function abrirSeletor(sel, titulo) {
+  const dr = $("#dialog-root");
+  const ops = [...sel.options];
+  dr.innerHTML = `<div class="pk-wrap"><div class="pk" role="listbox" aria-label="${esc(titulo)}">
+    <div class="pk-h"><span>${esc(titulo)}</span><button type="button" data-pk="x">Fechar</button></div>
+    <div class="pk-l">${ops.map((o, i) => `<button type="button" class="pk-o${o.value === sel.value ? " on" : ""}" data-pk="${i}"><span>${esc(o.textContent)}</span>${o.value === sel.value ? "<b>✓</b>" : ""}</button>`).join("")}</div>
+  </div></div>`;
+  const wrap = $(".pk-wrap", dr);
+  requestAnimationFrame(() => wrap.classList.add("in"));
+  const fechar = () => { wrap.classList.remove("in"); setTimeout(() => { if (dr.contains(wrap)) dr.innerHTML = ""; }, 220); };
+  wrap.onclick = (e) => {
+    const b = e.target.closest("[data-pk]");
+    if (!b) { if (e.target === wrap) fechar(); return; }
+    if (b.dataset.pk !== "x") {
+      const o = ops[Number(b.dataset.pk)];
+      if (o.value !== sel.value) {
+        sel.value = o.value;
+        sel.dispatchEvent(new Event("input", { bubbles: true }));
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+    fechar();
+  };
+  const on = $(".pk-o.on", wrap);
+  if (on) on.scrollIntoView({ block: "center" });
+}
 
 // Ao voltar para o app (ex.: virou o dia), redesenha
 document.addEventListener("visibilitychange", () => { if (!document.hidden) agendar(); });
