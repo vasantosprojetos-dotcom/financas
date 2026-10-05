@@ -633,7 +633,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.4 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.5 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -698,10 +698,24 @@ function abrirSheet({ titulo, corpo, esquerda = "Cancelar", direita = null, onDi
   $('[data-s="fechar"]', sh).onclick = () => fecharSheet();
   if (direita) { $('[data-s="ok"]', sh).onclick = () => onDireita?.(); $('[data-s="ok2"]', sh).onclick = () => onDireita?.(); }
   ajustarSheet();
-  document.body.style.overflow = "hidden";
+  travarPagina(true);
   onMontar?.(sh);
   return sh;
 }
+/* Trava a página de fundo (no iPhone, rolar o fundo desalinha os toques) */
+let travadaEm = null;
+function travarPagina(on) {
+  const b = document.body;
+  if (on && travadaEm === null) {
+    travadaEm = window.scrollY;
+    Object.assign(b.style, { position: "fixed", top: `-${travadaEm}px`, left: "0", right: "0", width: "100%", overflow: "hidden" });
+  } else if (!on && travadaEm !== null) {
+    const y = travadaEm; travadaEm = null;
+    Object.assign(b.style, { position: "", top: "", left: "", right: "", width: "", overflow: "" });
+    window.scrollTo(0, y);
+  }
+}
+
 /* iPhone: mantém a folha inteira visível acima do teclado (o topo nunca some) */
 function ajustarSheet() {
   const sh = $(".sheet", sheetRoot);
@@ -712,18 +726,17 @@ function ajustarSheet() {
   // nada se mexe debaixo do dedo (evita tocar numa linha e abrir a de baixo).
   const teclado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
   sh.style.bottom = `${teclado}px`;
-  if (window.scrollY) window.scrollTo(0, 0);
 }
 if (window.visualViewport) {
   window.visualViewport.addEventListener("resize", ajustarSheet);
   window.visualViewport.addEventListener("scroll", ajustarSheet);
 }
-document.addEventListener("focusout", () => setTimeout(() => { ajustarSheet(); if (window.scrollY) window.scrollTo(0, 0); }, 60));
+document.addEventListener("focusout", () => setTimeout(ajustarSheet, 60));
 
 function fecharSheet(imediato = false) {
   const ov = $(".overlay", sheetRoot), sh = $(".sheet", sheetRoot);
-  document.body.style.overflow = "";
   if (!sh) return;
+  travarPagina(false);
   if (imediato) { sheetRoot.innerHTML = ""; return; }
   ov.classList.remove("in"); sh.classList.remove("in");
   setTimeout(() => { if ($(".sheet", sheetRoot) === sh) sheetRoot.innerHTML = ""; }, 350);
@@ -1414,8 +1427,11 @@ function abrirSeletor(sel, titulo) {
     }
     fechar();
   };
-  const on = $(".pk-o.on", wrap);
-  if (on) on.scrollIntoView({ block: "center" });
+  const on = $(".pk-o.on", wrap), lista = $(".pk-l", wrap);
+  if (on) lista.scrollTop = Math.max(0, on.offsetTop - lista.clientHeight / 2 + on.offsetHeight / 2);
+  // ignora toques enquanto a lista ainda está aparecendo
+  const abertoEm = Date.now();
+  wrap.addEventListener("click", (e) => { if (Date.now() - abertoEm < 280) { e.stopPropagation(); e.preventDefault(); } }, true);
 }
 
 // Ao voltar para o app (ex.: virou o dia), redesenha
