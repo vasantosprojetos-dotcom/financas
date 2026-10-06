@@ -643,7 +643,32 @@ function viewFixas() {
       <button class="skip-btn" data-a="pular" data-v="${r.id}">Pular</button><button class="ok-btn" data-a="confirmar" data-v="${r.id}">✓</button></div>`;
     }).join("")}</div>` : (todas.length ? `<div class="card empty"><div class="e-ico">✨</div><b>Tudo em dia</b>Todas as fixas de ${mesNome(S.mes).toLowerCase()} já foram lançadas.</div>` : "");
 
-  const lista = todas.length ? `<div class="section-label">Suas fixas</div><div class="card" style="padding:2px 16px"><div class="list">${todas.map((r) => linhaFixa(r)).join("")}</div></div>
+  // Fixas agrupadas por categoria (despesas, receitas, investimentos), maior total primeiro
+  const ordemTipo = { despesa: 0, receita: 1, investimento: 2 };
+  const titulosFx = { despesa: "Despesas fixas", receita: "Receitas fixas", investimento: "Investimentos fixos" };
+  const gruposFx = new Map();
+  todas.forEach((r) => { const k = `fx|${r.tipo}|${r.catId}`; if (!gruposFx.has(k)) gruposFx.set(k, []); gruposFx.get(k).push(r); });
+  const totFx = {}; todas.filter((r) => r.ativo !== false).forEach((r) => (totFx[r.tipo] = (totFx[r.tipo] || 0) + r.valor));
+  let tipoFx = null;
+  const blocosFx = [...gruposFx.entries()].map(([k, rs]) => ({ k, tipo: rs[0].tipo, cat: catInfo(rs[0].tipo, rs[0].catId), rs, total: rs.filter((r) => r.ativo !== false).reduce((x, r) => x + r.valor, 0) }))
+    .sort((a, b) => ordemTipo[a.tipo] - ordemTipo[b.tipo] || b.total - a.total)
+    .map((g) => {
+      const cab = g.tipo !== tipoFx ? `<div class="section-label" style="display:flex;justify-content:space-between"><span>${titulosFx[g.tipo]}</span><span class="num">${brl(totFx[g.tipo] || 0)}/mês</span></div>` : "";
+      tipoFx = g.tipo;
+      const pct = totFx[g.tipo] ? Math.round((g.total / totFx[g.tipo]) * 100) : 0;
+      const cls = g.tipo === "receita" ? " rec" : g.tipo === "investimento" ? " inv" : "";
+      return `${cab}<section class="cat-g${S.fechadas.has(g.k) ? " fechado" : ""}" style="--c:${g.cat.cor}">
+        <button class="cat-h" data-a="toggle-cat" data-v="${esc(g.k)}">
+          <div class="ico" style="--tint:${tint(g.cat.cor)}">${g.cat.emoji}</div>
+          <div class="row-main"><div class="row-t">${esc(g.cat.nome)}</div>
+            <div class="row-s">${g.rs.length} ${g.rs.length === 1 ? "fixa" : "fixas"} · ${pct}%</div>
+            <div class="cat-bar"><i style="width:${pct}%"></i></div></div>
+          <div class="row-v num${cls}">${brl(g.total)}</div><span class="chev cat-chev">›</span>
+        </button>
+        <div class="cat-b list">${g.rs.map((r) => linhaFixa(r)).join("")}</div>
+      </section>`;
+    }).join("");
+  const lista = todas.length ? blocosFx + `
     <p class="help">Cada fixa gera exatamente uma pendência por mês. Ao confirmar (✓), ela vira um lançamento e some da lista até o mês seguinte. "Pular" serve para meses em que ela não acontece.</p>`
     : `<div class="card empty"><div class="e-ico">🔁</div><b>Nenhuma conta fixa ainda</b>Cadastre salário, aluguel, internet, assinaturas…<br>Elas aparecem todo mês para você confirmar com um toque.<br><br><button class="btn" data-a="nova-fixa">Cadastrar a primeira</button></div>`;
   return blocoPend + lista + (confirmadas.length ? "" : "");
@@ -667,7 +692,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.7 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.8 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
