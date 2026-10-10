@@ -469,3 +469,11 @@ button, .f.sel, .pk, .pk *, .tab, .month, .quick button { -webkit-user-select: n
 .tile.tap { cursor: pointer; transition: transform .15s; }
 .tile.tap:active { transform: scale(.97); }
 .t-go { margin-left: auto; color: var(--faint); font-size: 17px; line-height: 1; }
+
+/* Chave liga/desliga estilo iOS */
+.sw-row > span { display: flex; flex-direction: column; padding: 8px 0; }
+.sw-row small { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.f input.sw { flex: 0 0 auto; -webkit-appearance: none; appearance: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; padding: 0; margin-left: auto; transition: background .2s; cursor: pointer; }
+.f input.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.18); transition: transform .22s var(--ease); }
+.f input.sw:checked { background: var(--green); }
+.f input.sw:checked::after { transform: translateX(20px); }

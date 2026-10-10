@@ -707,7 +707,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.10 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.11 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -864,7 +864,8 @@ function formLanc({ modo = "novo", orig = null, preset = {} } = {}) {
     cartaoId: b.cartaoId || cartoes[0]?.id || "",
     parcelas: modo === "compra" ? b.parcelas : 1,
     obs: b.obs || "",
-    quem: b.quem || eu()
+    quem: b.quem || eu(),
+    repetir: false
   };
   if (!f.catId || !catsDe(f.tipo).some((c) => c.id === f.catId)) { f.catId = catsDe(f.tipo)[0]?.id || ""; }
 
@@ -899,6 +900,7 @@ function formLanc({ modo = "novo", orig = null, preset = {} } = {}) {
     <div id="fl-prev"></div>`}
     <div class="group">
       ${nomes().length > 1 ? `<label class="f sel"><span>Quem lançou</span><select id="fl-quem">${nomes().map((n) => opt(n, n, f.quem)).join("")}</select></label>` : ""}
+      ${modo === "novo" && !(f.tipo === "despesa" && f.forma === "Crédito" && f.parcelas > 1) ? `<label class="f sw-row"><span>Repetir todo mês<small>Vira uma fixa: aparece todo mês para confirmar</small></span><input type="checkbox" id="fl-rep" class="sw"${f.repetir ? " checked" : ""}></label>` : ""}
       <label class="f col"><span>Observações</span><textarea id="fl-obs" rows="2" placeholder="Opcional">${esc(f.obs)}</textarea></label>
     </div>
     ${modo !== "novo" && modo !== "rec" ? `<button class="btn danger" type="button" data-x="excluir">Excluir lançamento</button>` : ""}`;
@@ -917,6 +919,7 @@ function formLanc({ modo = "novo", orig = null, preset = {} } = {}) {
     if (v("fl-conta") !== undefined) f.contaId = v("fl-conta");
     if (v("fl-quem") !== undefined) f.quem = v("fl-quem");
     f.obs = (v("fl-obs") ?? f.obs).trim();
+    const rep = $("#fl-rep", sh); f.repetir = rep ? rep.checked : false;
   };
 
   const atualizarPrev = (sh) => {
@@ -956,6 +959,21 @@ function formLanc({ modo = "novo", orig = null, preset = {} } = {}) {
   const salvar = (sh) => {
     ler(sh);
     if (!Number.isFinite(f.valor) || f.valor <= 0) { const el = $("#fl-valor", sh); el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake"); el.focus(); return; }
+    if (modo === "novo" && f.repetir) {
+      const rid = novoId();
+      const cc = f.tipo === "despesa" && f.forma === "Crédito" && S.cartoes.get(f.cartaoId);
+      const nome = f.desc || f.sub || catInfo(f.tipo, f.catId).nome;
+      f.desc = nome;
+      fire(setDoc(ref("recorrentes", rid), {
+        tipo: f.tipo, desc: nome, valor: f.valor, dia: Number(f.data.slice(8, 10)), catId: f.catId, sub: f.sub || "",
+        forma: f.forma, cartaoId: cc ? f.cartaoId : null, contaId: cc ? null : (f.contaId || null),
+        inicio: ymOf(f.data), fim: null, ativo: true, criadoEm: Date.now(), atualizadoEm: Date.now()
+      }));
+      salvarLanc(f, "rec", { recId: rid, mes: ymOf(f.data), data: f.data });
+      fecharSheet();
+      toast(`${nome} lançada e fixada todo dia ${Number(f.data.slice(8, 10))} ✓`);
+      return;
+    }
     salvarLanc(f, modo, orig);
     fecharSheet();
     toast(modo === "novo" || modo === "rec" ? "Lançado ✓" : "Alterações salvas ✓");
