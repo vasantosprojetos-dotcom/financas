@@ -465,9 +465,10 @@ function viewInicio() {
       <div class="tile" style="--c:var(--accent)"><div class="t-l"><i></i>Economia ${pctTxt}</div><div class="t-v num">${brl(t.economia)}</div><div class="t-s">${t.pct == null ? "sem receitas no mês" : "da renda economizada"}</div></div>
       <div class="tile invest" style="--c:var(--teal)"><div class="t-l"><i></i>Investido</div><div class="t-v num">${brl(t.investido)}</div><div class="t-s">Total acumulado: ${brl(investidoTotal())}</div></div>
     </div>
+    ${cardFaturas()}
     ${cardCategorias()}`;
 
-  const colunaB = `${cardPendencias()}${cardFaturas()}${cardRecentes()}`;
+  const colunaB = `${cardPendencias()}${cardRecentes()}`;
   return `<div class="dash"><div>${colunaA}</div><div>${colunaB}</div></div>`;
 }
 
@@ -513,11 +514,25 @@ function cardPendencias() {
 
 function cardFaturas() {
   const fs = faturas(S.mes);
-  if (!fs.length) return `<section class="card"><div class="card-h"><h3>Cartões</h3></div>
+  if (!fs.length) return `<section class="card"><div class="card-h"><h3>A pagar por cartão</h3></div>
     <div class="empty" style="padding:8px 4px 4px"><b>Nenhum cartão ainda</b>Cadastre seus cartões para as parcelas caírem na fatura certa.<br><br><button class="btn ghost" data-a="ir-cartoes" style="box-shadow:var(--shadow)">Cadastrar cartão</button></div></section>`;
   const total = fs.reduce((s, f) => s + f.total, 0);
-  const linhas = fs.map((f) => linhaFatura(f)).join("");
-  return `<section class="card"><div class="card-h"><h3>Faturas de ${mesNome(S.mes).toLowerCase()}</h3><span class="num" style="font-weight:600">${brl(total)}</span></div>${linhas}</section>`;
+  // em aberto = esta fatura + parcelas que ainda vão cair nos meses seguintes
+  const aberto = (cid) => lancAtivos().filter((l) => l.tipo === "despesa" && l.cartaoId === cid && (l.competencia || "") >= S.mes).reduce((x, l) => x + l.valor, 0);
+  const linhas = fs.map((f) => ({ ...f, aberto: aberto(f.cartao.id) }))
+    .sort((a, b) => b.total - a.total || b.aberto - a.aberto)
+    .map((f) => {
+      const c = f.cartao;
+      const futuro = f.aberto - f.total;
+      return `<button class="apc" data-a="fatura" data-v="${c.id}" style="--c:${c.cor || "#5E5CE6"}">
+        <i class="apc-dot"></i>
+        <div class="row-main"><div class="row-t">${esc(c.nome)}</div>
+          <div class="row-s">Vence ${f.vence.slice(8)}/${f.vence.slice(5, 7)}</div>${futuro > 0 ? `<div class="row-s apc-fut">+ ${brl(futuro)} em parcelas futuras</div>` : ""}</div>
+        <div class="row-v num${f.total ? "" : " zero"}">${brl(f.total)}</div></button>`;
+    }).join("");
+  return `<section class="card"><div class="card-h"><h3>A pagar por cartão</h3><span class="muted" style="font-size:13px">faturas de ${mesNome(S.mes).toLowerCase()}</span></div>
+    <div class="apc-list">${linhas}</div>
+    <div class="apc-tot"><span>Total das faturas</span><b class="num">${brl(total)}</b></div></section>`;
 }
 function linhaFatura(f) {
   const c = f.cartao;
@@ -692,7 +707,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.8 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.9 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 

@@ -453,3 +453,16 @@ button, .f.sel, .pk, .pk *, .tab, .month, .quick button { -webkit-user-select: n
 .cat-b { padding: 0 16px 2px; border-top: 0.5px solid var(--line); }
 .cat-g.fechado .cat-b { display: none; }
 .cat-b .ico { width: 32px; height: 32px; font-size: 16px; border-radius: 10px; }
+
+/* A pagar por cartão */
+.apc { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 0; border-bottom: 0.5px solid var(--line); }
+.apc:last-child { border-bottom: 0; }
+.apc:active { opacity: .6; }
+.apc-dot { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent); margin: 0 4px; }
+.apc .row-t { font-size: 15px; }
+.apc .row-s { font-size: 12px; }
+.apc .row-v { font-size: 16px; }
+.apc .row-v.zero { color: var(--faint); font-weight: 500; }
+.apc-tot { display: flex; justify-content: space-between; align-items: baseline; border-top: 0.5px solid var(--line); margin-top: 4px; padding-top: 12px; font-size: 14px; color: var(--muted); }
+.apc-tot b { font-size: 17px; color: var(--text); }
+.apc-fut { color: var(--faint); margin-top: 0; }
