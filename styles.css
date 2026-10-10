@@ -466,3 +466,6 @@ button, .f.sel, .pk, .pk *, .tab, .month, .quick button { -webkit-user-select: n
 .apc-tot { display: flex; justify-content: space-between; align-items: baseline; border-top: 0.5px solid var(--line); margin-top: 4px; padding-top: 12px; font-size: 14px; color: var(--muted); }
 .apc-tot b { font-size: 17px; color: var(--text); }
 .apc-fut { color: var(--faint); margin-top: 0; }
+.tile.tap { cursor: pointer; transition: transform .15s; }
+.tile.tap:active { transform: scale(.97); }
+.t-go { margin-left: auto; color: var(--faint); font-size: 17px; line-height: 1; }

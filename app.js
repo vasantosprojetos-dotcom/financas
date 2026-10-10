@@ -460,10 +460,10 @@ function viewInicio() {
       ${barra}
     </section>
     <div class="tiles">
-      <div class="tile" style="--c:var(--green)"><div class="t-l"><i></i>Receitas</div><div class="t-v num">${brl(t.receitas)}</div></div>
-      <div class="tile" style="--c:var(--red)"><div class="t-l"><i></i>Despesas</div><div class="t-v num">${brl(t.despesas)}</div></div>
+      <div class="tile tap" data-a="ver-tipo" data-v="receita" style="--c:var(--green)"><div class="t-l"><i></i>Receitas <span class="t-go">›</span></div><div class="t-v num">${brl(t.receitas)}</div></div>
+      <div class="tile tap" data-a="ver-tipo" data-v="despesa" style="--c:var(--red)"><div class="t-l"><i></i>Despesas <span class="t-go">›</span></div><div class="t-v num">${brl(t.despesas)}</div></div>
       <div class="tile" style="--c:var(--accent)"><div class="t-l"><i></i>Economia ${pctTxt}</div><div class="t-v num">${brl(t.economia)}</div><div class="t-s">${t.pct == null ? "sem receitas no mês" : "da renda economizada"}</div></div>
-      <div class="tile invest" style="--c:var(--teal)"><div class="t-l"><i></i>Investido</div><div class="t-v num">${brl(t.investido)}</div><div class="t-s">Total acumulado: ${brl(investidoTotal())}</div></div>
+      <div class="tile invest tap" data-a="ver-tipo" data-v="investimento" style="--c:var(--teal)"><div class="t-l"><i></i>Investido <span class="t-go">›</span></div><div class="t-v num">${brl(t.investido)}</div><div class="t-s">Total acumulado: ${brl(investidoTotal())}</div></div>
     </div>
     ${cardFaturas()}
     ${cardCategorias()}`;
@@ -707,7 +707,7 @@ function viewMais() {
       ${item("backup", "📦", "#30B0C7", "Backup e exportação", "Baixar cópia, exportar CSV, restaurar")}
     </div>
     <div class="menu"><button class="row" data-a="sair"><div class="ico" style="--tint:${tint("#E0574F")}">🚪</div><div class="row-main"><div class="row-t" style="color:var(--red)">Sair desta casa neste aparelho</div><div class="row-s">Os dados continuam salvos; basta digitar a chave de novo</div></div></button></div>
-    <p class="help" style="text-align:center">Finanças · versão 1.9 (Fase 1)</p>`;
+    <p class="help" style="text-align:center">Finanças · versão 1.10 (Fase 1)</p>`;
 }
 const voltar = `<button class="back" data-a="sub" data-v="">‹ Mais</button>`;
 
@@ -1422,6 +1422,7 @@ document.addEventListener("click", (e) => {
     case "view": S.view = v; S.sub = null; window.scrollTo({ top: 0 }); agendar(); break;
     case "sub": S.sub = v || null; window.scrollTo({ top: 0 }); agendar(); break;
     case "filtro": S.filtro = v; agendar(); break;
+    case "ver-tipo": S.view = "lanc"; S.filtro = v; S.sub = null; window.scrollTo({ top: 0 }); agendar(); break;
     case "agrupar": S.agrupar = v; try { localStorage.setItem("fc_agrupar", v); } catch {} agendar(); break;
     case "toggle-cat": S.fechadas.has(v) ? S.fechadas.delete(v) : S.fechadas.add(v); agendar(); break;
     case "cat-tipo": S.catTipo = v; agendar(); break;
